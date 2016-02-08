@@ -1,0 +1,26 @@
+---
+title: "NOAAStormAnalysis"
+author: "shawnlee"
+date: "2016년 2월 8일"
+output: html_document
+---
+
+Analysis on most harmful event and economic consequences 
+
+```{r}
+
+if(!file.exists("stormdata")) {
+  download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2", destfile = "stormdata")
+}
+
+storm_data <- read.csv(bzfile("stormdata"))
+#View(head(storm_data))
+
+
+```
+
+You can also embed plots, for example:
+
+```{r, echo=FALSE}
+plot(cars)
+```
