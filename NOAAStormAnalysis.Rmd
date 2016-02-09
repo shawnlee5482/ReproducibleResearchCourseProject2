@@ -1,21 +1,30 @@
 ---
 title: "NOAAStormAnalysis"
-author: "shawnlee"
-date: "2016년 2월 8일"
+author: "SungChan Lee"
+date: "Feb 8 2016"
 output: html_document
 ---
 
-# Type of events most harful with respect to polulation health
+## Type of events most harful with respect to polulation health
+
+### Synopsis
+*NOAA(National Oceanic and Atmospheric Advministration) storm database has characteristics of major storms and weather events in the United States.   The goal of this analysis is to find out what is the most health threatining event and what event has most serious economic effect.   To find out the event affect on the population heath, fatality and injury data is summed by event type.   To figure out the economic effect, numeric calcuation has been performed to convert exponential code into actual values.   Three plots are provided to visualize the analysis result.   The result shows Tonado is the most significant event for fatalities and injuries.   On contrary the highst event for economic damage is Flood (Tonado is the 3rd event)*
+
+### Data Processing
+
+This line is requred to prevent following error   
+"Warning message:In scan(file, what, nmax, sep, dec, quote, skip, nlines, na.strings,  : 
+EOF within quoted string""
 
 ```{r, echo=TRUE}
 
 library(ggplot2)
-
-# this line is requred to prevent following error
-# Warning message:In scan(file, what, nmax, sep, dec, quote, skip, nlines, na.strings,  : 
-#EOF within quoted string
 Sys.setlocale("LC_ALL", "English")
+```
 
+When we download or unzip data, it is required to check if there is already data to avoid repeating unnecessary work.
+
+```{r, echo=TRUE}
 #cache zipped file
 if(!file.exists("stormdata.csv.bz2")) {
   download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2", destfile = "stormdata.csv.bz2")
@@ -28,12 +37,20 @@ if(!file.exists("stormdata.csv"))
 #cache data
 if(!exists("raw_storm_data")) 
   raw_storm_data <- read.csv("stormdata.csv")
+```
+
+### Filter out unused columns through this project
+```{r, echo=TRUE}
 
 #filter necessary columns
 storm_data <- raw_storm_data[,c('EVTYPE','FATALITIES','INJURIES', 'PROPDMG', 'PROPDMGEXP', 'CROPDMG', 'CROPDMGEXP')]
 
-print (head(storm_data))
+#print (head(storm_data))
+```
 
+
+### Count fatalities and injuries for each event type
+```{r, echo=TRUE}
 #count fatalities per event type
 fatal <- aggregate(FATALITIES~EVTYPE, data=storm_data, FUN=sum, na.rm=TRUE, na.action=NULL)
 fatal <- fatal[order(fatal$FATALITIES, decreasing=TRUE), ]
@@ -50,16 +67,20 @@ barplot(injury.top5$INJURIES, names.arg = injury.top5$EVTYPE, xlab="Event Type",
 
 ```
 
-##Result
-Tonado has the most significant effect on the population health
+###Result
+<span style="color:red">**Barplot shows that Tonado has the most significant effect on the population health** </span>
 
-# Type of event have the greatest economic consequences
-```{r, echo=FALSE}
+## Type of event have the greatest economic consequences
+
+First of all, we should check how damage data is described
+```{r, echo=TRUE}
 ## check what levels are 
-print("Let's see how exponential code look like")
 print(unique(storm_data$PROPDMGEXP))
 print(unique(storm_data$CROPDMGEXP))
+```
 
+According to the observation, we should convert exponential code into exponential value   
+```{r, echo=FALSE}
 storm_data$PROPDMGEXP <- sub(pattern="^$|[-?+]", replacement="0", x=storm_data$PROPDMGEXP)
 storm_data$PROPDMGEXP <- sub(pattern="[H]", replacement="2", ignore.case= TRUE,  x=storm_data$PROPDMGEXP)
 storm_data$PROPDMGEXP <- sub(pattern="[K]", replacement="3", ignore.case= TRUE,  x=storm_data$PROPDMGEXP)
@@ -70,23 +91,37 @@ storm_data$CROPDMGEXP <- sub(pattern="^$|[?]", replacement="0", x=storm_data$CRO
 storm_data$CROPDMGEXP <- sub(pattern="[K]", replacement="3", ignore.case= TRUE,  x=storm_data$CROPDMGEXP)
 storm_data$CROPDMGEXP <- sub(pattern="[M]", replacement="6", ignore.case= TRUE,  x=storm_data$CROPDMGEXP)
 storm_data$CROPDMGEXP <- sub(pattern="[B]", replacement="9", ignore.case= TRUE,  x=storm_data$CROPDMGEXP)
+```
 
-print("Let's see exponential code was replaced correctly")
+Let's see exponential code was replaced correctly   
+```{r, echo=TRUE}
 print(unique(storm_data$PROPDMGEXP))
 print(unique(storm_data$CROPDMGEXP))
+```
 
+### We should calculate total damage 
+```{r, echo=TRUE}
 #calculate damage
 storm_data$TOTALDMG <- as.numeric(storm_data$PROPDMG) * (10 ^ as.numeric(storm_data$PROPDMGEXP)) + as.numeric(storm_data$CROPDMG) * (10 ^ as.numeric(storm_data$CROPDMGEXP))
+```
 
+### Aggregate damage data by summation according to event type
+```{r, echo=FALSE}
 #aggregate
 storm_data.damage <- aggregate(TOTALDMG~EVTYPE, data = storm_data, FUN=sum, na.rm=TRUE, na.action=NULL)
 #print(head(storm_data.damage, 20))
 
 #sort
 storm_data.damage <- storm_data.damage[order(storm_data.damage$TOTALDMG, decreasing=TRUE), ]
+```
 
+### Bar plot top5 
+```{r, echo=FALSE}
 
 storm_data.damage.top5 = head(storm_data.damage, 5)
 #storm_data.damage.top5
 barplot(storm_data.damage.top5$TOTALDMG, names.arg = storm_data.damage.top5$EVTYPE, xlab="Event Type", ylab="Total Damage", cex.names=0.5, main="Top5 event with high damage")
 ```
+
+### Result
+<span style="color:red">**Flood is the event with the highst damage**</span>
