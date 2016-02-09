@@ -9,18 +9,41 @@ Analysis on most harmful event and economic consequences
 
 ```{r}
 
-if(!file.exists("stormdata")) {
-  download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2", destfile = "stormdata")
+library(ggplot2)
+
+# this line is requred to prevent following error
+# Warning message:In scan(file, what, nmax, sep, dec, quote, skip, nlines, na.strings,  : 
+#EOF within quoted string
+Sys.setlocale("LC_ALL", "English")
+
+if(!file.exists("stormdata.csv.bz2")) {
+  download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2", destfile = "stormdata.csv.bz2")
 }
 
-storm_data <- read.csv(bzfile("stormdata"))
-#View(head(storm_data))
+if(!file.exists("stormdata.csv")) 
+  bunzip2("stormdata.csv.bz2", remove="FALSE")
 
+if(!exists("raw_storm_data")) 
+  raw_storm_data <- read.csv("stormdata.csv")
+
+storm_data <- raw_storm_data[,c('EVTYPE','FATALITIES','INJURIES', 'PROPDMG', 'PROPDMGEXP', 'CROPDMG', 'CROPDMGEXP')]
+
+fatal <- aggregate(FATALITIES~EVTYPE, data=storm_data, FUN=sum, na.rm=TRUE, na.action=NULL)
+fatal <- fatal[order(fatal$FATALITIES, decreasing=TRUE), ]
+fatal.top5 <- head(fatal, 5)
+fatal.top5
+barplot(fatal.top5$FATALITIES, names.arg = fatal.top5$EVTYPE, xlab="Event Type", ylab="Fatalities", cex.names=0.7, main="Top5 event with high fatalities")
+
+injury <- aggregate(INJURIES~EVTYPE, data = storm_data, FUN=sum, na.rm=TRUE, na.action=NULL)
+injury <- injury[order(injury$INJURIES, decreasing=TRUE), ]
+injury.top5 <- head(injury, 5)
+injury.top5
+barplot(injury.top5$INJURIES, names.arg = injury.top5$EVTYPE, xlab="Event Type", ylab="Injuries", cex.names=0.7, main="Top5 event with high Injuries")
 
 ```
 
 You can also embed plots, for example:
 
 ```{r, echo=FALSE}
-plot(cars)
+
 ```
