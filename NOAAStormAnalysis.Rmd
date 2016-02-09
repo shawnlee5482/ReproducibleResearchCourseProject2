@@ -5,9 +5,9 @@ date: "2016년 2월 8일"
 output: html_document
 ---
 
-Analysis on most harmful event and economic consequences 
+# Type of events most harful with respect to polulation health
 
-```{r}
+```{r, echo=TRUE}
 
 library(ggplot2)
 
@@ -16,24 +16,32 @@ library(ggplot2)
 #EOF within quoted string
 Sys.setlocale("LC_ALL", "English")
 
+#cache zipped file
 if(!file.exists("stormdata.csv.bz2")) {
   download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2", destfile = "stormdata.csv.bz2")
 }
 
+#cache uncompressed file
 if(!file.exists("stormdata.csv")) 
   bunzip2("stormdata.csv.bz2", remove="FALSE")
 
+#cache data
 if(!exists("raw_storm_data")) 
   raw_storm_data <- read.csv("stormdata.csv")
 
+#filter necessary columns
 storm_data <- raw_storm_data[,c('EVTYPE','FATALITIES','INJURIES', 'PROPDMG', 'PROPDMGEXP', 'CROPDMG', 'CROPDMGEXP')]
 
+print (head(storm_data))
+
+#count fatalities per event type
 fatal <- aggregate(FATALITIES~EVTYPE, data=storm_data, FUN=sum, na.rm=TRUE, na.action=NULL)
 fatal <- fatal[order(fatal$FATALITIES, decreasing=TRUE), ]
 fatal.top5 <- head(fatal, 5)
 fatal.top5
 barplot(fatal.top5$FATALITIES, names.arg = fatal.top5$EVTYPE, xlab="Event Type", ylab="Fatalities", cex.names=0.7, main="Top5 event with high fatalities")
 
+#count injury per event type
 injury <- aggregate(INJURIES~EVTYPE, data = storm_data, FUN=sum, na.rm=TRUE, na.action=NULL)
 injury <- injury[order(injury$INJURIES, decreasing=TRUE), ]
 injury.top5 <- head(injury, 5)
@@ -42,8 +50,43 @@ barplot(injury.top5$INJURIES, names.arg = injury.top5$EVTYPE, xlab="Event Type",
 
 ```
 
-You can also embed plots, for example:
+##Result
+Tonado has the most significant effect on the population health
 
+# Type of event have the greatest economic consequences
 ```{r, echo=FALSE}
+## check what levels are 
+print("Let's see how exponential code look like")
+print(unique(storm_data$PROPDMGEXP))
+print(unique(storm_data$CROPDMGEXP))
 
+storm_data$PROPDMGEXP <- sub(pattern="^$|[-?+]", replacement="0", x=storm_data$PROPDMGEXP)
+storm_data$PROPDMGEXP <- sub(pattern="[H]", replacement="2", ignore.case= TRUE,  x=storm_data$PROPDMGEXP)
+storm_data$PROPDMGEXP <- sub(pattern="[K]", replacement="3", ignore.case= TRUE,  x=storm_data$PROPDMGEXP)
+storm_data$PROPDMGEXP <- sub(pattern="[M]", replacement="6", ignore.case= TRUE,  x=storm_data$PROPDMGEXP)
+storm_data$PROPDMGEXP <- sub(pattern="[B]", replacement="9", ignore.case= TRUE,  x=storm_data$PROPDMGEXP)
+
+storm_data$CROPDMGEXP <- sub(pattern="^$|[?]", replacement="0", x=storm_data$CROPDMGEXP)
+storm_data$CROPDMGEXP <- sub(pattern="[K]", replacement="3", ignore.case= TRUE,  x=storm_data$CROPDMGEXP)
+storm_data$CROPDMGEXP <- sub(pattern="[M]", replacement="6", ignore.case= TRUE,  x=storm_data$CROPDMGEXP)
+storm_data$CROPDMGEXP <- sub(pattern="[B]", replacement="9", ignore.case= TRUE,  x=storm_data$CROPDMGEXP)
+
+print("Let's see exponential code was replaced correctly")
+print(unique(storm_data$PROPDMGEXP))
+print(unique(storm_data$CROPDMGEXP))
+
+#calculate damage
+storm_data$TOTALDMG <- as.numeric(storm_data$PROPDMG) * (10 ^ as.numeric(storm_data$PROPDMGEXP)) + as.numeric(storm_data$CROPDMG) * (10 ^ as.numeric(storm_data$CROPDMGEXP))
+
+#aggregate
+storm_data.damage <- aggregate(TOTALDMG~EVTYPE, data = storm_data, FUN=sum, na.rm=TRUE, na.action=NULL)
+#print(head(storm_data.damage, 20))
+
+#sort
+storm_data.damage <- storm_data.damage[order(storm_data.damage$TOTALDMG, decreasing=TRUE), ]
+
+
+storm_data.damage.top5 = head(storm_data.damage, 5)
+#storm_data.damage.top5
+barplot(storm_data.damage.top5$TOTALDMG, names.arg = storm_data.damage.top5$EVTYPE, xlab="Event Type", ylab="Total Damage", cex.names=0.5, main="Top5 event with high damage")
 ```
